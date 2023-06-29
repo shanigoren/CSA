@@ -132,6 +132,62 @@ class CensoredSquaredLoss(SurvivalLossFunction):
         np.exp(raw_predictions, out=raw_predictions)
         return raw_predictions
 
+class CensoredPinballLoss(SurvivalLossFunction):
+    """Censoring-aware pinball loss.
+
+    Censoring is taken into account by only considering the residuals
+    of samples that are not censored, or the predicted survival time
+    is before the time of censoring.
+    """
+    def __init__(self, beta=0.5):
+        self.beta = beta
+        super().__init__()
+
+
+    def __call__(self, y, raw_predictions, sample_weight=None):
+        """Compute the partial likelihood of prediction ``y_pred`` and ``y``."""
+        pred_time = y["time"] - raw_predictions.ravel()
+        mask = (pred_time > 0) | y["event"] # is 0 for instances with loss 1
+        underestimated = pred_time > 0
+        overestimated = (pred_time <= 0) & y["event"]        
+        return (self.beta*(pred_time.compress(underestimated, axis=0))+(-1+self.beta)*(pred_time.compress(overestimated, axis=0)))/np.sum(mask)
+
+    def negative_gradient(self, y, raw_predictions, beta, **kwargs):  # pylint: disable=unused-argument
+        """Negative gradient of partial likelihood
+
+        Parameters
+        ---------
+        y : tuple, len = 2
+            First element is boolean event indicator and second element survival/censoring time.
+        y_pred : np.ndarray, shape=(n,):
+            The predictions.
+        """
+        pred_time = y["time"] - raw_predictions.ravel()
+        underestimated = pred_time > 0
+        overestimated = (pred_time <= 0) & y["event"]       
+
+        ret = np.zeros(y["event"].shape[0])
+        ret[underestimated] = self.beta
+        ret[overestimated] = -1+self.beta
+        return ret
+
+    def update_terminal_regions(
+        self, tree, X, y, residual, raw_predictions, sample_weight, sample_mask, learning_rate=0.1, k=0
+    ):
+        """Least squares does not need to update terminal regions.
+
+        But it has to update the predictions.
+        """
+        # update predictions
+        raw_predictions[:, k] += learning_rate * tree.predict(X).ravel()
+
+    def _update_terminal_region(self, tree, terminal_regions, leaf, X, y, residual, raw_predictions, sample_weight):
+        """Least squares does not need to update terminal regions"""
+
+    def _scale_raw_prediction(self, raw_predictions):
+        np.exp(raw_predictions, out=raw_predictions)
+        return raw_predictions
+
 
 class IPCWLeastSquaresError(SurvivalLossFunction):
     """Inverse probability of censoring weighted least squares error"""
@@ -162,4 +218,5 @@ LOSS_FUNCTIONS = {
     "coxph": CoxPH,
     "squared": CensoredSquaredLoss,
     "ipcwls": IPCWLeastSquaresError,
+    "pinball": CensoredPinballLoss,
 }

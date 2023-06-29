@@ -29,7 +29,7 @@ from sklearn.utils.validation import check_is_fitted
 from ..base import SurvivalAnalysisMixin
 from ..linear_model.coxph import BreslowEstimator
 from ..util import check_array_survival
-from .survival_loss import LOSS_FUNCTIONS, CensoredSquaredLoss, CoxPH, IPCWLeastSquaresError
+from .survival_loss import LOSS_FUNCTIONS, CensoredSquaredLoss, CoxPH, IPCWLeastSquaresError, CensoredPinballLoss, SurvivalLossFunction
 
 __all__ = ["ComponentwiseGradientBoostingSurvivalAnalysis", "GradientBoostingSurvivalAnalysis"]
 
@@ -305,7 +305,7 @@ class ComponentwiseGradientBoostingSurvivalAnalysis(BaseEnsemble, SurvivalAnalys
         self._validate_params()
 
         self.estimators_ = []
-        self._loss = LOSS_FUNCTIONS[self.loss]()
+        self._loss = LOSS_FUNCTIONS[self.loss]() if self.loss != "pinball" else LOSS_FUNCTIONS[self.loss](beta=self.beta)
         if isinstance(self._loss, (CensoredSquaredLoss, IPCWLeastSquaresError)):
             time = np.log(time)
 
@@ -756,6 +756,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
         self,
         *,
         loss="coxph",
+        beta=None,
         learning_rate=0.1,
         n_estimators=100,
         subsample=1.0,
@@ -796,6 +797,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
             tol=tol,
             ccp_alpha=ccp_alpha,
         )
+        self.beta = beta
         self.dropout_rate = dropout_rate
 
     def _warn_mae_for_criterion(self):
@@ -816,7 +818,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
 
         self.max_features_ = max_features
 
-        self._loss = LOSS_FUNCTIONS[self.loss]()
+        self._loss = LOSS_FUNCTIONS[self.loss]() if self.loss != "pinball" else LOSS_FUNCTIONS[self.loss](beta=self.beta)
 
     def _check_max_features(self):
         if isinstance(self.max_features, str):
