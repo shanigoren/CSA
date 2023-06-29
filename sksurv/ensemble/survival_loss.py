@@ -152,7 +152,7 @@ class CensoredPinballLoss(SurvivalLossFunction):
         overestimated = (pred_time <= 0) & y["event"]        
         return (self.beta*(pred_time.compress(underestimated, axis=0))+(-1+self.beta)*(pred_time.compress(overestimated, axis=0)))/np.sum(mask)
 
-    def negative_gradient(self, y, raw_predictions, beta, **kwargs):  # pylint: disable=unused-argument
+    def negative_gradient(self, y, raw_predictions, **kwargs):  # pylint: disable=unused-argument
         """Negative gradient of partial likelihood
 
         Parameters

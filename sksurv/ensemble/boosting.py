@@ -305,7 +305,7 @@ class ComponentwiseGradientBoostingSurvivalAnalysis(BaseEnsemble, SurvivalAnalys
         self._validate_params()
 
         self.estimators_ = []
-        self._loss = LOSS_FUNCTIONS[self.loss]() if self.loss != "pinball" else LOSS_FUNCTIONS[self.loss](beta=self.beta)
+        self._loss = LOSS_FUNCTIONS[self.loss]() if self.loss != "pinball" else CensoredPinballLoss(beta=self.beta)
         if isinstance(self._loss, (CensoredSquaredLoss, IPCWLeastSquaresError)):
             time = np.log(time)
 
@@ -818,7 +818,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
 
         self.max_features_ = max_features
 
-        self._loss = LOSS_FUNCTIONS[self.loss]() if self.loss != "pinball" else LOSS_FUNCTIONS[self.loss](beta=self.beta)
+        self._loss = LOSS_FUNCTIONS[self.loss]() if self.loss != "pinball" else CensoredPinballLoss(beta=self.beta)
 
     def _check_max_features(self):
         if isinstance(self.max_features, str):
