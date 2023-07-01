@@ -756,7 +756,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
         self,
         *,
         loss="coxph",
-        beta=None,
+        beta=0.5,
         learning_rate=0.1,
         n_estimators=100,
         subsample=1.0,
@@ -1092,7 +1092,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
 
         self._check_params()
 
-        if isinstance(self._loss, (CensoredSquaredLoss, IPCWLeastSquaresError)):
+        if isinstance(self._loss, (CensoredSquaredLoss, IPCWLeastSquaresError, CensoredPinballLoss)):
             time = np.log(time)
 
         if self.n_iter_no_change is not None:

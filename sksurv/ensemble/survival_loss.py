@@ -9,7 +9,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <http://www.gnu.org/licenses/>CensoredPinballLoss.
 from abc import ABCMeta
 
 import numpy as np
@@ -91,6 +91,8 @@ class CensoredSquaredLoss(SurvivalLossFunction):
     of samples that are not censored, or the predicted survival time
     is before the time of censoring.
     """
+    def init_estimator(self):
+        return DummySurvivalEstimator(strategy="mean")
 
     # pylint: disable=no-self-use
     def __call__(self, y, raw_predictions, sample_weight=None):
@@ -143,14 +145,17 @@ class CensoredPinballLoss(SurvivalLossFunction):
         self.beta = beta
         super().__init__()
 
+    def init_estimator(self):
+        return DummySurvivalEstimator(strategy="quantile", quantile=self.beta)
 
     def __call__(self, y, raw_predictions, sample_weight=None):
         """Compute the partial likelihood of prediction ``y_pred`` and ``y``."""
         pred_time = y["time"] - raw_predictions.ravel()
         mask = (pred_time > 0) | y["event"] # is 0 for instances with loss 1
         underestimated = pred_time > 0
-        overestimated = (pred_time <= 0) & y["event"]        
-        return (self.beta*(pred_time.compress(underestimated, axis=0))+(-1+self.beta)*(pred_time.compress(overestimated, axis=0)))/np.sum(mask)
+        overestimated = (pred_time < 0) & y["event"]        
+        return ((self.beta*(pred_time.compress(underestimated, axis=0)).sum()+(-1+self.beta)*(pred_time.compress(overestimated, axis=0))).sum()
+                )/y["time"].shape[0]
 
     def negative_gradient(self, y, raw_predictions, **kwargs):  # pylint: disable=unused-argument
         """Negative gradient of partial likelihood
@@ -164,7 +169,7 @@ class CensoredPinballLoss(SurvivalLossFunction):
         """
         pred_time = y["time"] - raw_predictions.ravel()
         underestimated = pred_time > 0
-        overestimated = (pred_time <= 0) & y["event"]       
+        overestimated = (pred_time < 0) & y["event"]       
 
         ret = np.zeros(y["event"].shape[0])
         ret[underestimated] = self.beta
