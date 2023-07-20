@@ -33,7 +33,6 @@ from .survival_loss import LOSS_FUNCTIONS, CensoredSquaredLoss, CoxPH, IPCWLeast
 
 __all__ = ["ComponentwiseGradientBoostingSurvivalAnalysis", "GradientBoostingSurvivalAnalysis"]
 
-
 def _sample_binomial_plus_one(p, size, random_state):
     drop_model = random_state.binomial(1, p=p, size=size)
     n_dropped = np.sum(drop_model)
@@ -775,6 +774,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
         dropout_rate=0.0,
         verbose=0,
         ccp_alpha=0.0,
+        warm_start=False,
     ):
         super().__init__(
             loss=loss,
@@ -796,6 +796,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
             n_iter_no_change=n_iter_no_change,
             tol=tol,
             ccp_alpha=ccp_alpha,
+            warm_start=warm_start,
         )
         self.beta = beta
         self.dropout_rate = dropout_rate
@@ -1091,9 +1092,30 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
         check_consistent_length(X, sample_weight)
 
         self._check_params()
+        if not self._is_initialized():
+            # init state
+            self._init_state()
+            if isinstance(self._loss, (CensoredSquaredLoss, IPCWLeastSquaresError, CensoredPinballLoss)):
+                time = np.log(time)
+            begin_at_stage = 0
 
-        if isinstance(self._loss, (CensoredSquaredLoss, IPCWLeastSquaresError, CensoredPinballLoss)):
-            time = np.log(time)
+            if sample_weight_is_none:
+                self.init_.fit(X, (event, time))
+            else:
+                self.init_.fit(X, (event, time), sample_weight)
+                
+        else:
+            # add more estimators to fitted model
+            # invariant: warm_start = True
+            if self.n_estimators < self.estimators_.shape[0]:
+                raise ValueError(
+                    "n_estimators=%d must be larger or equal to "
+                    "estimators_.shape[0]=%d when "
+                    "warm_start==True" % (self.n_estimators, self.estimators_.shape[0])
+                )
+            begin_at_stage = self.estimators_.shape[0]
+            self._resize_state()
+                
 
         if self.n_iter_no_change is not None:
             X, X_val, event, event_val, time, time_val, sample_weight, sample_weight_val = train_test_split(
@@ -1109,14 +1131,7 @@ class GradientBoostingSurvivalAnalysis(BaseGradientBoosting, SurvivalAnalysisMix
         else:
             X_val = y_val = sample_weight_val = None
 
-        self._init_state()
-        if sample_weight_is_none:
-            self.init_.fit(X, (event, time))
-        else:
-            self.init_.fit(X, (event, time), sample_weight)
-
-        raw_predictions = self._loss.get_init_raw_predictions(X, self.init_)
-        begin_at_stage = 0
+        raw_predictions = self._loss.get_init_raw_predictions(X, self.init_)       
 
         # The rng state must be preserved if warm_start is True
         self._rng = check_random_state(self.random_state)
