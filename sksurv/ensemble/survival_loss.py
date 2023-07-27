@@ -151,7 +151,6 @@ class CensoredPinballLoss(SurvivalLossFunction):
     def __call__(self, y, raw_predictions, sample_weight=None):
         """Compute the partial likelihood of prediction ``y_pred`` and ``y``."""
         pred_time = y["time"] - raw_predictions.ravel()
-        mask = (pred_time > 0) | y["event"] # is 0 for instances with loss 1
         underestimated = pred_time > 0
         overestimated = (pred_time < 0) & y["event"]        
         return ((self.beta*(pred_time.compress(underestimated, axis=0)).sum()+(-1+self.beta)*(pred_time.compress(overestimated, axis=0))).sum()
