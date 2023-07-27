@@ -3,9 +3,25 @@
 |build-tests| |build-windows| |Codecov| |Codacy|
 
 ***************
-scikit-survival
+scikit-survival - Conformalized Survival Regression
 ***************
 
+This repository contains the scikit-survival package with our implementation of the censored pinball. 
+The Jupyter notebook for running the experiments detailed in the report:
+
+`AdversarialSurvivalBoosting.ipynb <https://github.com/shanigoren/CSA/blob/master/CSA/AdversarialSurvivalBoosting.ipynb>`_
+
+=======================
+Instructions for Running the Notebook:
+=======================
+1. Create a conda environment with the packages required by scikit-survival.
+2. Activate environment.
+3. Run ``pip install .``
+4. Run notebook.
+
+***************
+scikit-survival
+***************
 scikit-survival is a Python module for `survival analysis`_
 built on top of `scikit-learn <https://scikit-learn.org/>`_. It allows doing survival analysis
 while utilizing the power of scikit-learn, e.g., for pre-processing or doing cross-validation.
