@@ -14,10 +14,11 @@ The Jupyter notebook for running the experiments detailed in the report:
 =======================
 Instructions for Running the Notebook:
 =======================
-1. Create a conda environment with the packages required by scikit-survival.
-2. Activate environment.
-3. ``pip install .``
-4. Run notebook.
+1. Clone repository.
+2. Create a conda environment with the packages required by scikit-survival.
+3. Activate environment.
+4. ``pip install .``
+5. Run notebook.
 
 ***************
 scikit-survival
