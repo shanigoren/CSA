@@ -3,7 +3,7 @@
 |build-tests| |build-windows| |Codecov| |Codacy|
 
 ***************
-Conformalized Survival Analysis -scikit-survival 
+Conformalized Survival Analysis - scikit-survival 
 ***************
 
 This repository contains the scikit-survival package with our implementation of the censored pinball loss. 
@@ -16,7 +16,7 @@ Instructions for Running the Notebook:
 =======================
 1. Create a conda environment with the packages required by scikit-survival.
 2. Activate environment.
-3. Run ``pip install .``
+3. ``pip install .``
 4. Run notebook.
 
 ***************
